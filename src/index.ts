@@ -11,8 +11,8 @@ const app = new Elysia()
       .get('/note', ({ note }) => note.data)
       .get(
             '/note/:index', 
-            ({ note, params: { index } }) => {
-              return note.data[index]
+            ({ note, params: { index }, status }) => {
+              return note.data[index] ?? status(404, 'oh noo :(')
             },
             {
               params: t.Object({
