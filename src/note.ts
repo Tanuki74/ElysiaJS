@@ -28,16 +28,17 @@ export const note = new Elysia({ prefix: '/note'})
         })
     })
 
+    .guard({
+        params: t.Object({
+            index: t.Number()
+        })
+    })
+
     // Read note
     .get(
         '/read/:index',
         ({ note, params: { index }, status }) => {
             return note.data[index] ?? status(404, 'oh no :(')
-        },
-        {
-            params: t.Object({
-                index: t.Number()
-            })
         }
     )
 
@@ -48,11 +49,6 @@ export const note = new Elysia({ prefix: '/note'})
             if (index in note.data) return note.remove(index)
 
             return status(422)
-        },
-        {
-            params: t.Object({
-                index: t.Number()
-            })
         }
     )
 
@@ -65,9 +61,6 @@ export const note = new Elysia({ prefix: '/note'})
             return status(422)
         },
         {
-            params: t.Object({
-                index: t.Number()
-            }),
             body: t.Object({
                 data: t.String()
             })
