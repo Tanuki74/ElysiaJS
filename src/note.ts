@@ -1,28 +1,42 @@
-import { Elysia, t } from 'elysia'
+import { Elysia, t } from 'elysia';
+import { NoteRepository } from './db/repository';
+import { InsertNote } from './db/schema';
 
 class Note {
-    constructor(public data: string[] = ['Moonhalo']) {}
+    private repository: NoteRepository;
 
-    add(note: string){
-        this.data.push(note)
-        return this.data
+    constructor() {
+        this.repository = new NoteRepository();
     }
 
-    remove(index: number){
-        return this.data.splice(index, 1)
+    async getAll() {
+        return await this.repository.findAll();
     }
 
-    update(index: number, note: string){
-        return (this.data[index] = note)
+    async getById(id: number) {
+        return await this.repository.findById(id);
+    }
+
+    async add(content: string) {
+        const note: InsertNote = { content };
+        return await this.repository.create(note);
+    }
+
+    async remove(id: number) {
+        return await this.repository.delete(id);
+    }
+
+    async update(id: number, content: string) {
+        return await this.repository.update(id, { content });
     }
 }
 
 export const note = new Elysia({ prefix: '/note'})
     .decorate('note', new Note())
-    .get('/', ({ note }) => note.data)
+    .get('/', async ({ note }) => await note.getAll())
 
     // Add note
-    .put('/add', ({ note, body: { data } }) => note.add(data), {
+    .put('/add', async ({ note, body: { data } }) => await note.add(data), {
         body: t.Object({
             data: t.String()
         })
@@ -30,35 +44,40 @@ export const note = new Elysia({ prefix: '/note'})
 
     .guard({
         params: t.Object({
-            index: t.Number()
+            id: t.Number()
         })
     })
 
     // Read note
     .get(
-        '/read/:index',
-        ({ note, params: { index }, status }) => {
-            return note.data[index] ?? status(404, 'oh no :(')
+        '/read/:id',
+        async ({ note, params: { id }, status }) => {
+            const result = await note.getById(id);
+            return result ?? status(404, 'Note not found');
         }
     )
 
     // Delete note
     .delete(
-        '/delete/:index',
-        ({ note, params: { index }, status}) => {
-            if (index in note.data) return note.remove(index)
-
-            return status(422)
+        '/delete/:id',
+        async ({ note, params: { id }, status}) => {
+            const noteExists = await note.getById(id);
+            if (noteExists) {
+                return await note.remove(id);
+            }
+            return status(422, 'Note not found');
         }
     )
 
     // Update note 
     .patch(
-        '/update/:index',
-        ({ note, params: { index }, body: { data }, status }) => {
-            if(index in note.data) return note.update(index, data)
-
-            return status(422)
+        '/update/:id',
+        async ({ note, params: { id }, body: { data }, status }) => {
+            const noteExists = await note.getById(id);
+            if(noteExists) {
+                return await note.update(id, data);
+            }
+            return status(422, 'Note not found');
         },
         {
             body: t.Object({
