@@ -6,6 +6,12 @@ To get started with this template, simply paste this command into your terminal:
 bun create elysia ./elysia-example
 ```
 
+## Migrate
+To start the migration run:
+```bash
+bun run db:migrate
+```
+
 ## Development
 To start the development server run:
 ```bash
